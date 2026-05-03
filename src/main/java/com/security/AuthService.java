@@ -1,5 +1,6 @@
 package com.security;
 
+import com.config.JwtConfig;
 import com.dto.*;
 import com.entity.RefreshTokenEntity;
 import com.entity.UserEntity;
@@ -33,6 +34,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final JwtConfig jwtConfig;
 
     public UserDTO signUp(@Valid SignUpRequestDto signUpRequestDto) {
         UserEntity userEntity = userService.getUserByUsernameOrEmail(signUpRequestDto.getUsername(),signUpRequestDto.getEmail());
@@ -70,7 +72,8 @@ public class AuthService {
             cookie.setHttpOnly(true);
             cookie.setSecure(true);
             cookie.setPath("/auth/refresh");
-            cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+            cookie.setMaxAge((int) (jwtConfig.getRefreshTokenExpiration()/1000)); // 7 days
+
             //set cookie in servlet response
             httpServletResponse.addCookie(cookie);
 
@@ -99,11 +102,11 @@ public class AuthService {
         RefreshTokenEntity old = refreshTokenService.verifyToken(token);
         UserDetails userDetails = userService.loadUserByUsername(old.getUsername());
 
-        refreshTokenService.revokeToken(token);
-        RefreshTokenEntity newToken = refreshTokenService.createRefreshToken(old.getUsername());
+        refreshTokenService.deleteTokensByUsername(userDetails.getUsername());
+        RefreshTokenEntity newToken = refreshTokenService.createRefreshToken(userDetails.getUsername());
 
         Cookie cookie = new Cookie("refreshToken", newToken.getToken());
-        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+        cookie.setMaxAge((int) (jwtConfig.getRefreshTokenExpiration()/1000)); // 7 days
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/auth/refresh");
