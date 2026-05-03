@@ -1,7 +1,10 @@
 package com.security.token;
 
+import com.config.JwtConfig;
 import com.entity.RefreshTokenEntity;
 import com.entity.UserEntity;
+import com.exception.InvalidActionException;
+import com.exception.ResourceNotFoundException;
 import com.repository.RefreshTokenRepository;
 import com.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +20,8 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final JwtConfig jwtConfig;
 
-    private static final long REFRESH_TOKEN_DURATION_DAYS = 7;
 
     public RefreshTokenEntity createRefreshToken(String username) {
 
@@ -29,7 +32,7 @@ public class RefreshTokenService {
         refreshToken.setUser(user);
         refreshToken.setToken(UUID.randomUUID().toString());
         refreshToken.setUsername(username);
-        refreshToken.setExpiryDate(LocalDateTime.now().plusDays(REFRESH_TOKEN_DURATION_DAYS));
+        refreshToken.setExpiryDate(LocalDateTime.now().plusSeconds(jwtConfig.getRefreshTokenExpiration() / 1000));
         refreshToken.setRevoked(false);
 
         return refreshTokenRepository.saveAndFlush(refreshToken);
@@ -38,14 +41,14 @@ public class RefreshTokenService {
     public RefreshTokenEntity verifyToken(String token) {
 
         RefreshTokenEntity refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new InvalidActionException("Invalid refresh token"));
 
         if(refreshToken.isRevoked()){
-            throw new RuntimeException("Refresh token revoked");
+            throw new InvalidActionException("Refresh token revoked");
         }
 
         if(refreshToken.getExpiryDate().isBefore(LocalDateTime.now())){
-            throw new RuntimeException("Refresh token expired");
+            throw new InvalidActionException("Refresh token expired");
         }
 
         return refreshToken;
@@ -54,7 +57,7 @@ public class RefreshTokenService {
     public void revokeToken(String token){
 
         RefreshTokenEntity refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Token not found"));
 
         refreshToken.setRevoked(true);
 

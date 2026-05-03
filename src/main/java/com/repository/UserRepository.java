@@ -10,8 +10,7 @@ import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     @ReadFast
-    @Query("SELECT u FROM UserEntity u WHERE u.username = :username OR u.email = :email")
-    Optional<UserEntity> findByUsername(String username,String email);
+    Optional<UserEntity> findByUsername(String username);
 
     @ReadFast
     Optional<UserEntity> findByUsernameOrEmail(String username, String email);

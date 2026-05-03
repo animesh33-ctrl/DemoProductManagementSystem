@@ -28,6 +28,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public @NullMarked UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username,username).orElseThrow(()-> new UsernameNotFoundException("Username "+username+" not found"));
+        return userRepository.findByUsernameOrEmail(username,username).orElseThrow(()-> new UsernameNotFoundException("Username "+username+" not found"));
     }
 }

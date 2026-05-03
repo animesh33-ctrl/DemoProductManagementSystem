@@ -55,10 +55,11 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(loginRequestDTO.getEmailOrUsername(),loginRequestDTO.getPassword())
             );
 
-            //delete any existing refresh tokens for the user to prevent multiple active sessions
-            refreshTokenService.deleteTokensByUsername(loginRequestDTO.getEmailOrUsername());
-
             UserDetails userDetails = userService.loadUserByUsername(loginRequestDTO.getEmailOrUsername());
+
+            //delete any existing refresh tokens for the user to prevent multiple active sessions
+            refreshTokenService.deleteTokensByUsername(userDetails.getUsername());
+
 
             //generate new tokens
             String accessToken = jwtService.generateToken(userDetails);
