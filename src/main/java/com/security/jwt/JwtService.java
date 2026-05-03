@@ -10,12 +10,14 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.WeakKeyException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -55,16 +57,22 @@ public class JwtService {
         }
     }
 
-    public String generateToken(String username){
+    public String generateToken(UserDetails userDetails){
         long expirationMs = jwtConfig.getAccessTokenExpiration();
         if (expirationMs <= 0) {
             // Keep a safe default rather than silently generating non-expiring tokens.
             expirationMs = 1000L * 60 * 60;
         }
 
+        // Collect authority strings
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
         Date now = new Date();
         return Jwts.builder()
-                .subject(username)
+                .subject(userDetails.getUsername())
+                .claim("roles", roles)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMs))
                 .signWith(secretKey, Jwts.SIG.HS256)

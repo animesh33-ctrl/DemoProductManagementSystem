@@ -17,6 +17,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -57,8 +58,10 @@ public class AuthService {
             //delete any existing refresh tokens for the user to prevent multiple active sessions
             refreshTokenService.deleteTokensByUsername(loginRequestDTO.getEmailOrUsername());
 
+            UserDetails userDetails = userService.loadUserByUsername(loginRequestDTO.getEmailOrUsername());
+
             //generate new tokens
-            String accessToken = jwtService.generateToken(loginRequestDTO.getEmailOrUsername());
+            String accessToken = jwtService.generateToken(userDetails);
             RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginRequestDTO.getEmailOrUsername());
 
             //set refresh token in cookie
@@ -93,6 +96,7 @@ public class AuthService {
                 .orElseThrow(() -> new AuthenticationServiceException("Refresh token not found inside the Cookies"));
 
         RefreshTokenEntity old = refreshTokenService.verifyToken(token);
+        UserDetails userDetails = userService.loadUserByUsername(old.getUsername());
 
         refreshTokenService.revokeToken(token);
         RefreshTokenEntity newToken = refreshTokenService.createRefreshToken(old.getUsername());
@@ -104,7 +108,7 @@ public class AuthService {
         cookie.setPath("/auth/refresh");
         httpServletResponse.addCookie(cookie);
 
-        String newAccessToken = jwtService.generateToken(old.getUsername());
+        String newAccessToken = jwtService.generateToken(userDetails);
         return new LoginResponseDTO(newAccessToken);
     }
 

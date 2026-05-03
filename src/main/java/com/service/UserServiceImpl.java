@@ -1,10 +1,10 @@
 package com.service;
 
 import com.entity.UserEntity;
-import com.exception.ResourceConflictException;
 import com.repository.UserRepository;
 import com.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return null;
+    public @NullMarked UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username,username).orElseThrow(()-> new UsernameNotFoundException("Username "+username+" not found"));
     }
 }
