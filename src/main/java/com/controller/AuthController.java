@@ -36,4 +36,10 @@ public class AuthController {
     public ResponseEntity<ApiResponse<?>> refreshToken(HttpServletRequest request, HttpServletResponse httpServletResponse){
         return new ResponseEntity<>(new ApiResponse<>(authService.refreshToken(request,httpServletResponse)), HttpStatus.OK);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<?>> logout(HttpServletRequest request, HttpServletResponse httpServletResponse){
+        authService.logout(request,httpServletResponse);
+        return new ResponseEntity<>(new ApiResponse<>("Logged out successfully"), HttpStatus.OK);
+    }
 }

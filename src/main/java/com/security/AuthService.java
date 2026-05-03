@@ -107,4 +107,27 @@ public class AuthService {
         String newAccessToken = jwtService.generateToken(old.getUsername());
         return new LoginResponseDTO(newAccessToken);
     }
+
+    public void logout(HttpServletRequest request, HttpServletResponse httpServletResponse) {
+        Cookie[] cookies = request.getCookies();
+        if(cookies == null){
+            throw new AuthenticationServiceException("No cookies found in the request");
+        }
+        Arrays.stream(cookies).filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .findFirst()
+                .ifPresent(cookie -> {
+                    try{
+                        refreshTokenService.revokeToken(cookie.getValue());
+                    }
+                    catch (Exception ignored){}
+                });
+
+        Cookie cookie = new Cookie("refreshToken", null);
+        cookie.setMaxAge(0);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/auth/refresh");
+        httpServletResponse.addCookie(cookie);
+
+    }
 }
