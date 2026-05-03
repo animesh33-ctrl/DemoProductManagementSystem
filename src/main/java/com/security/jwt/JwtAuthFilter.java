@@ -1,5 +1,7 @@
 package com.security.jwt;
 
+import com.advice.ApiError;
+import com.advice.ApiResponse;
 import com.security.token.TokenBlacklistService;
 import com.service.interfaces.UserService;
 import jakarta.servlet.FilterChain;
@@ -8,12 +10,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
@@ -24,6 +28,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserService userService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
@@ -36,12 +41,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        final  String accessToken = authHeader.substring(7);
+        final String accessToken = authHeader.substring(7);
 
         // CHECK BLACKLIST FIRST
         if (tokenBlacklistService.isBlacklisted(accessToken)) {
+            ApiError apiError = new ApiError(HttpStatus.UNAUTHORIZED,"Token has been revoked", null);
+            ApiResponse<?> apiResponse = new ApiResponse<>(apiError); // check your constructor
+
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Token has been revoked");
+            response.setContentType("application/json");
+            response.getWriter()
+                    .write(objectMapper.writeValueAsString(apiResponse));
             return;
         }
 
