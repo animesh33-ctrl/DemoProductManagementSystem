@@ -11,10 +11,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -44,7 +46,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userService.loadUserByUsername(username);
-            if(jwtService.validateUsernameAndToken(accessToken, userDetails,username)){
+            if(jwtService.validateUsernameAndToken(username, userDetails,accessToken)){
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authenticationToken.setDetails(

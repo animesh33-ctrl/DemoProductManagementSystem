@@ -1,8 +1,11 @@
 package com.security.token;
 
 import com.entity.RefreshTokenEntity;
+import com.entity.UserEntity;
 import com.repository.RefreshTokenRepository;
+import com.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,13 +16,17 @@ import java.util.UUID;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
 
     private static final long REFRESH_TOKEN_DURATION_DAYS = 7;
 
     public RefreshTokenEntity createRefreshToken(String username) {
 
-        RefreshTokenEntity refreshToken = new RefreshTokenEntity();
+        UserEntity user = userRepository.findByUsernameOrEmail(username, username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+        RefreshTokenEntity refreshToken = new RefreshTokenEntity();
+        refreshToken.setUser(user);
         refreshToken.setToken(UUID.randomUUID().toString());
         refreshToken.setUsername(username);
         refreshToken.setExpiryDate(LocalDateTime.now().plusDays(REFRESH_TOKEN_DURATION_DAYS));
