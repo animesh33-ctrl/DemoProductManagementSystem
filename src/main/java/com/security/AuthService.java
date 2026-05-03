@@ -65,7 +65,7 @@ public class AuthService {
 
             //generate new tokens
             String accessToken = jwtService.generateToken(userDetails);
-            RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginRequestDTO.getEmailOrUsername());
+            RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(userDetails.getUsername());
 
             //set refresh token in cookie
             Cookie cookie = new Cookie("refreshToken", refreshToken.getToken());
