@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,11 +29,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<?>> login(@RequestBody @Valid LoginRequestDTO loginRequestDTO, HttpServletResponse httpServletResponse){
-        return new ResponseEntity<>(new ApiResponse<>(authService.login(loginRequestDTO)), HttpStatus.OK);
+        return new ResponseEntity<>(new ApiResponse<>(authService.login(loginRequestDTO,httpServletResponse)), HttpStatus.OK);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<?>> refreshToken(HttpServletRequest request, HttpServletResponse httpServletResponse){
-        return new ResponseEntity<>(new ApiResponse<>(authService.refreshToken(request)), HttpStatus.OK);
+        return new ResponseEntity<>(new ApiResponse<>(authService.refreshToken(request,httpServletResponse)), HttpStatus.OK);
     }
 }

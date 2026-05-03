@@ -10,6 +10,7 @@ import com.security.token.RefreshTokenService;
 import com.service.interfaces.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -46,14 +47,31 @@ public class AuthService {
         return modelMapper.map(user,UserDTO.class);
     }
 
-    public TokenResponse login(@Valid LoginRequestDTO loginRequestDTO) {
+    public LoginResponseDTO login(@Valid LoginRequestDTO loginRequestDTO, HttpServletResponse httpServletResponse) {
+        //1st authenticate the user using AuthenticationManager, if authentication fails an exception will be thrown
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequestDTO.getEmailOrUsername(),loginRequestDTO.getPassword())
             );
+
+            //delete any existing refresh tokens for the user to prevent multiple active sessions
+            refreshTokenService.deleteTokensByUsername(loginRequestDTO.getEmailOrUsername());
+
+            //generate new tokens
             String accessToken = jwtService.generateToken(loginRequestDTO.getEmailOrUsername());
             RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginRequestDTO.getEmailOrUsername());
-            return new TokenResponse(accessToken, refreshToken.getToken());
+
+            //set refresh token in cookie
+            Cookie cookie = new Cookie("refreshToken", refreshToken.getToken());
+            cookie.setHttpOnly(true);
+            cookie.setSecure(true);
+            cookie.setPath("/auth/refresh");
+            cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+            //set cookie in servlet response
+            httpServletResponse.addCookie(cookie);
+
+            //return the accesstoken
+            return new LoginResponseDTO(accessToken);
         }
         catch (Exception ex){
                 throw new AuthenticationServiceException("Invalid username or password");
@@ -61,16 +79,32 @@ public class AuthService {
 
     }
 
-    public LoginResponseDTO refreshToken(HttpServletRequest request) {
-        String token = Arrays.stream(request.getCookies())
+    public LoginResponseDTO refreshToken(HttpServletRequest request, HttpServletResponse httpServletResponse) {
+        Cookie[] cookies = request.getCookies();
+        System.out.println("cookies: " + Arrays.toString(cookies));
+        if(cookies == null){
+            throw new AuthenticationServiceException("No cookies found in the request");
+        }
+
+        String token = Arrays.stream(cookies)
                 .filter(cookie -> "refreshToken".equals(cookie.getName()))
                 .findFirst()
                 .map(Cookie::getValue)
                 .orElseThrow(() -> new AuthenticationServiceException("Refresh token not found inside the Cookies"));
 
-        RefreshTokenEntity refreshToken = refreshTokenService.verifyToken(token);
-        String username = refreshToken.getUsername();
-        String newAccessToken = jwtService.generateToken(username);
+        RefreshTokenEntity old = refreshTokenService.verifyToken(token);
+
+        refreshTokenService.revokeToken(token);
+        RefreshTokenEntity newToken = refreshTokenService.createRefreshToken(old.getUsername());
+
+        Cookie cookie = new Cookie("refreshToken", newToken.getToken());
+        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/auth/refresh");
+        httpServletResponse.addCookie(cookie);
+
+        String newAccessToken = jwtService.generateToken(old.getUsername());
         return new LoginResponseDTO(newAccessToken);
     }
 }
