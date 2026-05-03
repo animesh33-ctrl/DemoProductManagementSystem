@@ -1,5 +1,6 @@
 package com.security.jwt;
 
+import com.security.token.TokenBlacklistService;
 import com.service.interfaces.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,6 +23,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserService userService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
@@ -35,6 +37,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         final  String accessToken = authHeader.substring(7);
+
+        // CHECK BLACKLIST FIRST
+        if (tokenBlacklistService.isBlacklisted(accessToken)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Token has been revoked");
+            return;
+        }
+
         final String username;
 
         try{

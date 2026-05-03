@@ -8,6 +8,7 @@ import com.enums.Role;
 import com.exception.ResourceConflictException;
 import com.security.jwt.JwtService;
 import com.security.token.RefreshTokenService;
+import com.security.token.TokenBlacklistService;
 import com.service.interfaces.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +19,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final JwtConfig jwtConfig;
+    private final TokenBlacklistService tokenBlacklistService;
+
 
     public UserDTO signUp(@Valid SignUpRequestDto signUpRequestDto) {
         UserEntity userEntity = userService.getUserByUsernameOrEmail(signUpRequestDto.getUsername(),signUpRequestDto.getEmail());
@@ -71,7 +76,7 @@ public class AuthService {
             Cookie cookie = new Cookie("refreshToken", refreshToken.getToken());
             cookie.setHttpOnly(true);
             cookie.setSecure(true);
-            cookie.setPath("/auth/refresh");
+            cookie.setPath("/");
             cookie.setMaxAge((int) (jwtConfig.getRefreshTokenExpiration()/1000)); // 7 days
 
             //set cookie in servlet response
@@ -81,14 +86,13 @@ public class AuthService {
             return new LoginResponseDTO(accessToken);
         }
         catch (Exception ex){
-                throw new AuthenticationServiceException("Invalid username or password");
+            throw new AuthenticationServiceException("Invalid username or password");
         }
 
     }
 
     public LoginResponseDTO refreshToken(HttpServletRequest request, HttpServletResponse httpServletResponse) {
         Cookie[] cookies = request.getCookies();
-        System.out.println("cookies: " + Arrays.toString(cookies));
         if(cookies == null){
             throw new AuthenticationServiceException("No cookies found in the request");
         }
@@ -109,7 +113,7 @@ public class AuthService {
         cookie.setMaxAge((int) (jwtConfig.getRefreshTokenExpiration()/1000)); // 7 days
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
-        cookie.setPath("/auth/refresh");
+        cookie.setPath("/");
         httpServletResponse.addCookie(cookie);
 
         String newAccessToken = jwtService.generateToken(userDetails);
@@ -117,24 +121,42 @@ public class AuthService {
     }
 
     public void logout(HttpServletRequest request, HttpServletResponse httpServletResponse) {
-        Cookie[] cookies = request.getCookies();
-        if(cookies == null){
-            throw new AuthenticationServiceException("No cookies found in the request");
+//        Cookie[] cookies = request.getCookies();
+//        if(cookies == null){
+//            throw new AuthenticationServiceException("No cookies found in the request");
+//        }
+//        Arrays.stream(cookies).filter(cookie -> "refreshToken".equals(cookie.getName()))
+//                .findFirst()
+//                .ifPresent(cookie -> {
+//                    try{
+//                        refreshTokenService.revokeToken(cookie.getValue());
+//                    }
+//                    catch (Exception ignored){}
+//                });
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || !authentication.isAuthenticated()){
+            throw new AuthenticationServiceException("Not authenticated");
         }
-        Arrays.stream(cookies).filter(cookie -> "refreshToken".equals(cookie.getName()))
-                .findFirst()
-                .ifPresent(cookie -> {
-                    try{
-                        refreshTokenService.revokeToken(cookie.getValue());
-                    }
-                    catch (Exception ignored){}
-                });
+
+        String username = authentication.getName();
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = authHeader.substring(7);
+            long remainingExpiry = jwtService.getRemainingExpiry(accessToken);
+            if (remainingExpiry > 0) {
+                tokenBlacklistService.blacklist(accessToken, remainingExpiry);
+            }
+        }
+
+        refreshTokenService.deleteTokensByUsername(username);
 
         Cookie cookie = new Cookie("refreshToken", null);
         cookie.setMaxAge(0);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
-        cookie.setPath("/auth/refresh");
+        cookie.setPath("/");
         httpServletResponse.addCookie(cookie);
 
     }

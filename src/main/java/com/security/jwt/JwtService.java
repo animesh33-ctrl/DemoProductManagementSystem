@@ -105,4 +105,14 @@ public class JwtService {
                 .getExpiration()
                 .before(new Date());
     }
+
+    public long getRemainingExpiry(String token) {
+        Date expiry = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+        return expiry.getTime() - System.currentTimeMillis();
+    }
 }
