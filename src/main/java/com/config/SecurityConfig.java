@@ -1,5 +1,7 @@
 package com.config;
 
+import com.filters.AuditLogFilter;
+import com.filters.RateLimitFilter;
 import com.security.handler.CustomAccessDeniedHandler;
 import com.security.handler.CustomAuthenticationEntryPoint;
 import com.filters.JwtAuthFilter;
@@ -35,6 +37,8 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final RateLimitFilter rateLimitFilter;
+    private final AuditLogFilter auditLogFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
@@ -56,7 +60,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
+        http.addFilterBefore(rateLimitFilter, JwtAuthFilter.class);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(auditLogFilter, JwtAuthFilter.class);
         return http.build();
     }
 

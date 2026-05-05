@@ -108,7 +108,12 @@ public class AuthService {
         } catch (Exception ex) {
             // Failed login — increment counter
             try {
-                accountLockoutService.handleFailedAttempt(loginRequestDTO.getEmailOrUsername());
+                userRepository.findByUsernameOrEmail(
+                        loginRequestDTO.getEmailOrUsername(),
+                        loginRequestDTO.getEmailOrUsername()
+                ).ifPresent(user ->
+                        accountLockoutService.handleFailedAttempt(user.getUsername())
+                );
             } catch (Exception ignored) {}
 
             throw new AuthenticationServiceException("Invalid username or password");
