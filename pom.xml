@@ -146,6 +146,11 @@
             <artifactId>antisamy</artifactId>
             <version>1.7.8</version>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.80</version>
+        </dependency>
 
     </dependencies>
 

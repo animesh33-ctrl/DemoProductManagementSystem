@@ -62,9 +62,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
-        http.addFilterBefore(xssFilter, RateLimitFilter.class);
-        http.addFilterBefore(rateLimitFilter, JwtAuthFilter.class);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(rateLimitFilter, JwtAuthFilter.class);
+        http.addFilterBefore(xssFilter, RateLimitFilter.class);
         http.addFilterAfter(auditLogFilter, JwtAuthFilter.class);
         return http.build();
     }

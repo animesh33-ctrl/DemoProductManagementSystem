@@ -40,7 +40,7 @@ public class SignUpRequestDto {
     @Past(message = "Date of birth must be in the past and in the format yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd", shape = JsonFormat.Shape.STRING)
     @NotNull
-    private LocalDate dob;
+    private LocalDate dateOfBirth;
 
     @NotBlank(message = "Phone number cannot be blank")
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
