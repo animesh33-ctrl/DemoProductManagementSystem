@@ -1,4 +1,4 @@
-package com.security.token;
+package com.security.tokenservice;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;

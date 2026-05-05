@@ -1,7 +1,7 @@
 package com.enums;
 
 public enum Gender {
-    Male,
-    Female,
-    Other
+    MALE,
+    FEMALE,
+    OTHERS
 }

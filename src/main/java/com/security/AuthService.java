@@ -6,9 +6,11 @@ import com.entity.RefreshTokenEntity;
 import com.entity.UserEntity;
 import com.enums.Role;
 import com.exception.ResourceConflictException;
+import com.repository.UserRepository;
 import com.security.jwt.JwtService;
-import com.security.token.RefreshTokenService;
-import com.security.token.TokenBlacklistService;
+import com.security.lockoutservice.AccountLockoutService;
+import com.security.tokenservice.RefreshTokenService;
+import com.security.tokenservice.TokenBlacklistService;
 import com.service.interfaces.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +41,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtConfig jwtConfig;
     private final TokenBlacklistService tokenBlacklistService;
+    private final UserRepository userRepository;
+    private final AccountLockoutService accountLockoutService;
 
 
     public UserDTO signUp(@Valid SignUpRequestDto signUpRequestDto) {
@@ -58,11 +62,24 @@ public class AuthService {
     public LoginResponseDTO login(@Valid LoginRequestDTO loginRequestDTO, HttpServletResponse httpServletResponse) {
         //1st authenticate the user using AuthenticationManager, if authentication fails an exception will be thrown
         try {
+
+            // Check if account locked BEFORE attempting auth
+            userRepository.findByUsernameOrEmail(
+                            loginRequestDTO.getEmailOrUsername(), loginRequestDTO.getEmailOrUsername())
+                    .ifPresent(user -> {
+                        if (!user.isAccountNonLocked()) {
+                            throw new AuthenticationServiceException(
+                                    "Account locked. Try again after " + user.getLockedUntil()
+                            );
+                        }
+                    });
+
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequestDTO.getEmailOrUsername(),loginRequestDTO.getPassword())
             );
 
             UserDetails userDetails = userService.loadUserByUsername(loginRequestDTO.getEmailOrUsername());
+            accountLockoutService.handleSuccessfulLogin(userDetails.getUsername());
 
             //delete any existing refresh tokens for the user to prevent multiple active sessions
             refreshTokenService.deleteTokensByUsername(userDetails.getUsername());
@@ -85,7 +102,15 @@ public class AuthService {
             //return the accesstoken
             return new LoginResponseDTO(accessToken);
         }
-        catch (Exception ex){
+        catch (AuthenticationServiceException ex) {
+            throw ex; // re-throw lockout message as-is
+
+        } catch (Exception ex) {
+            // Failed login — increment counter
+            try {
+                accountLockoutService.handleFailedAttempt(loginRequestDTO.getEmailOrUsername());
+            } catch (Exception ignored) {}
+
             throw new AuthenticationServiceException("Invalid username or password");
         }
 
@@ -106,6 +131,7 @@ public class AuthService {
         RefreshTokenEntity old = refreshTokenService.verifyToken(token);
         UserDetails userDetails = userService.loadUserByUsername(old.getUsername());
 
+        refreshTokenService.revokeToken(token);
         refreshTokenService.deleteTokensByUsername(userDetails.getUsername());
         RefreshTokenEntity newToken = refreshTokenService.createRefreshToken(userDetails.getUsername());
 

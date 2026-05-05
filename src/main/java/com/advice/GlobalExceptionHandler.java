@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -75,6 +76,15 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .build();
         return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ApiResponse<?>> handleLockedException(LockedException ex) {
+        ApiError error = ApiError.builder()
+                .message("Account is locked. Please try again later.")
+                 .status(HttpStatus.LOCKED)
+                .subErrors(null).build();
+        return buildErrorResponseEntity(error);
     }
 
     @ExceptionHandler(JwtException.class)

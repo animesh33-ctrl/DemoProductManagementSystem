@@ -1,4 +1,4 @@
-package com.security.token;
+package com.security.tokenservice;
 
 import com.config.JwtConfig;
 import com.entity.RefreshTokenEntity;

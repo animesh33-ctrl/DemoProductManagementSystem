@@ -13,6 +13,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,19 @@ public class UserEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(name = "failed_attempts")
+    private int failedAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
+    // Override — check DB lockout
+    @Override
+    public boolean isAccountNonLocked() {
+        if (lockedUntil == null) return true;
+        return LocalDateTime.now().isAfter(lockedUntil); // unlocked if time passed
+    }
+
     @Override
     public @NullMarked Collection<? extends GrantedAuthority> getAuthorities() {
         if(role==null){
@@ -68,11 +82,6 @@ public class UserEntity implements UserDetails {
     @Override
     public boolean isAccountNonExpired() {
         return UserDetails.super.isAccountNonExpired();
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
     }
 
     @Override

@@ -1,8 +1,9 @@
-package com.security.jwt;
+package com.filters;
 
 import com.advice.ApiError;
 import com.advice.ApiResponse;
-import com.security.token.TokenBlacklistService;
+import com.security.jwt.JwtService;
+import com.security.tokenservice.TokenBlacklistService;
 import com.service.interfaces.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
