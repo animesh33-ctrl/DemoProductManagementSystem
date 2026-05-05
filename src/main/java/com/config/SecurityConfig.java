@@ -5,6 +5,7 @@ import com.filters.RateLimitFilter;
 import com.security.handler.CustomAccessDeniedHandler;
 import com.security.handler.CustomAuthenticationEntryPoint;
 import com.filters.JwtAuthFilter;
+import com.security.xss.XssFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +40,7 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final RateLimitFilter rateLimitFilter;
     private final AuditLogFilter auditLogFilter;
+    private final XssFilter xssFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
@@ -60,6 +62,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
+        http.addFilterBefore(xssFilter, RateLimitFilter.class);
         http.addFilterBefore(rateLimitFilter, JwtAuthFilter.class);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterAfter(auditLogFilter, JwtAuthFilter.class);
