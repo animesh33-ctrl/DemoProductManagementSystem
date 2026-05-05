@@ -24,7 +24,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        if(request.getRequestURI().contains("/authenticate")) {
+        if(request.getRequestURI().contains("/auth/login")) {
 
             String ip = request.getRemoteAddr();
 

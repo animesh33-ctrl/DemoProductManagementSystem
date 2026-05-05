@@ -25,11 +25,12 @@ public class AuditLogFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
+        filterChain.doFilter(request, response);
         auditLogService.logRequest(
                 request,
-                SecurityContextHolder.getContext().getAuthentication()
+                SecurityContextHolder.getContext().getAuthentication(),
+                response.getStatus()
         );
 
-        filterChain.doFilter(request, response);
     }
 }

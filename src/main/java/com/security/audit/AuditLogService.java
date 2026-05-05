@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuditLogService {
 
-    public void logRequest(HttpServletRequest request, Authentication authentication) {
+    public void logRequest(HttpServletRequest request, Authentication authentication, int status) {
 
         String username = "anonymous";
 
@@ -21,7 +21,7 @@ public class AuditLogService {
         String uri = request.getRequestURI();
         String ip = request.getRemoteAddr();
 
-        log.info("AUDIT LOG | user={} | method={} | uri={} | ip={}",
-                username, method, uri, ip);
+        log.info("AUDIT LOG | user={} | method={} | uri={} | status={} | ip={}",
+                username, method, uri, status, ip);
     }
 }
