@@ -20,9 +20,9 @@ public class AuditLogFilter extends OncePerRequestFilter {
     private final AuditLogService auditLogService;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain)
+    protected @NullMarked void doFilterInternal(  HttpServletRequest request,
+                                                  HttpServletResponse response,
+                                                  FilterChain filterChain)
             throws ServletException, IOException {
 
         filterChain.doFilter(request, response);
