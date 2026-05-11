@@ -1,5 +1,6 @@
-package com.security.xss;
+package com.filters;
 
+import com.security.xss.XssRequestWrapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

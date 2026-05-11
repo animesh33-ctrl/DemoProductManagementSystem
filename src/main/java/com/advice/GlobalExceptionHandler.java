@@ -1,5 +1,6 @@
 package com.advice;
 
+import com.exception.ApiException;
 import com.exception.InvalidActionException;
 import com.exception.ResourceConflictException;
 import com.exception.ResourceNotFoundException;
@@ -21,28 +22,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<?>> handleResourceNotFoundException(ResourceNotFoundException exception) {
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiResponse<?>> handleInvalidActionException(ApiException exception) {
         ApiError apiError = ApiError.builder()
-                .status(HttpStatus.NOT_FOUND)
-                .message(exception.getMessage())
-                .build();
-        return buildErrorResponseEntity(apiError);
-    }
-
-    @ExceptionHandler(ResourceConflictException.class)
-    public ResponseEntity<ApiResponse<?>> handleResourceConflictException(ResourceConflictException exception) {
-        ApiError apiError = ApiError.builder()
-                .status(HttpStatus.CONFLICT)
-                .message(exception.getMessage())
-                .build();
-        return buildErrorResponseEntity(apiError);
-    }
-
-    @ExceptionHandler(InvalidActionException.class)
-    public ResponseEntity<ApiResponse<?>> handleInvalidActionException(InvalidActionException exception) {
-        ApiError apiError = ApiError.builder()
-                .status(HttpStatus.NOT_ACCEPTABLE)
+                .status(exception.getStatus())
                 .message(exception.getMessage())
                 .build();
         return buildErrorResponseEntity(apiError);

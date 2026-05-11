@@ -5,7 +5,7 @@ import com.filters.RateLimitFilter;
 import com.security.handler.CustomAccessDeniedHandler;
 import com.security.handler.CustomAuthenticationEntryPoint;
 import com.filters.JwtAuthFilter;
-import com.security.xss.XssFilter;
+import com.filters.XssFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

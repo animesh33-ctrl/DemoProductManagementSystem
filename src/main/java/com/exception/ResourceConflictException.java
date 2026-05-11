@@ -1,7 +1,9 @@
 package com.exception;
 
-public class ResourceConflictException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class ResourceConflictException extends ApiException {
     public ResourceConflictException(String message) {
-        super(message);
+        super(message, HttpStatus.CONFLICT);
     }
 }
